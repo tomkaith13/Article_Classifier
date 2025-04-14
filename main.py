@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 from typing import Literal
 import gradio as gr
 from functools import lru_cache
+from urllib.parse import urlparse
+
 
 lm = dspy.LM(
     'ollama_chat/llama3.2:latest',
@@ -82,7 +84,10 @@ def main():
     # wiki_results = classify(news_article=wiki_results.answer)
     # print("Classification Of Wiki Result:", wiki_results)
     classify = dspy.Predict(Classify)
-    def GetSentiment(url: str, question: str) -> str:
+
+    def GetSentiment(url: str) -> str:
+        if urlparse(url)[0] != "https":
+            return "Invalid URL"
         html_resp = parse_paras_out_of_news_url(url)
         soup = BeautifulSoup(html_resp, 'html.parser')
         article : str = ''
