@@ -19,11 +19,38 @@ url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'}
 
 def search_wikipedia(query: str):
+    """
+    Searches Wikipedia abstracts using the ColBERTv2 model and returns the top results.
+
+    Args:
+        query (str): The search query string.
+
+    Returns:
+        list: A list of strings containing the text of the top search results.
+    """
     results = dspy.ColBERTv2(url='http://20.102.90.50:2017/wiki17_abstracts')(query, k=10)
     return [x['text'] for x in results]
 
 @lru_cache(maxsize=1024)
 def parse_paras_out_of_news_url(url: str) -> str:
+    """
+    Fetches the content of a news article from the given URL.
+
+    This function sends an HTTP GET request to the specified URL and returns the 
+    response content as a string if the request is successful. If the request fails 
+    or encounters an error, an appropriate error message is returned.
+
+    Args:
+        url (str): The URL of the news article to fetch.
+
+    Returns:
+        str: The content of the news article if the request is successful, or an 
+        error message if the request fails or times out.
+
+    Exceptions:
+        - Returns "Error: Request timed out" if the request exceeds the timeout limit.
+        - Returns "Error: <error_message>" for any other exceptions encountered.
+    """
     try:
         r = requests.get(url, timeout=10, headers=headers)
         if r.status_code == 200:
