@@ -7,5 +7,6 @@ requires-python = ">=3.10"
 dependencies = [
     "beautifulsoup4>=4.13.3",
     "dspy>=2.6.17",
+    "gradio>=5.25.0",
     "requests>=2.32.3",
 ]
