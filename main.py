@@ -11,6 +11,7 @@ lm = dspy.LM(
     'ollama_chat/llama3.2:latest',
     api_base='http://localhost:11434',api_key='',cache=True, temperature=0.1)
 dspy.configure(lm=lm)
+rag = dspy.ChainOfThought('context, question -> answer')
 
 url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 # url = 'https://www.cbc.ca/news/politics/liberal-oppo-csfn-1.7509217'
@@ -49,7 +50,6 @@ def parse_paras_out_of_news_url(url: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-rag = dspy.ChainOfThought('context, question -> answer')
 
 class Classify(dspy.Signature):
     """Classify sentiment of a given news article as being either nuetral, positive or negative."""
