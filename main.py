@@ -18,19 +18,6 @@ url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 
 headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'}
 
-def search_wikipedia(query: str):
-    """
-    Searches Wikipedia abstracts using the ColBERTv2 model and returns the top results.
-
-    Args:
-        query (str): The search query string.
-
-    Returns:
-        list: A list of strings containing the text of the top search results.
-    """
-    results = dspy.ColBERTv2(url='http://20.102.90.50:2017/wiki17_abstracts')(query, k=10)
-    return [x['text'] for x in results]
-
 @lru_cache(maxsize=1024)
 def parse_paras_out_of_news_url(url: str) -> str:
     """
@@ -74,42 +61,6 @@ class Classify(dspy.Signature):
 
 
 def main():
-    # print("Hello from dspy-test!")
-    # lm("Say this is a test!", temperature=0.1)  # => ['This is a test!']
-    # resp = lm(messages=[{"role": "user", "content": 'Start by greeting "Hello Leaguer".'}])
-    # # print(resp)
-    # print("Response:", resp)
-    # # print("results from search_wiki:",res)
-    # candidate_question = """
-    # Make a case whether Mark Joseph Carney is good for Canada?
-    # """
-    
-    # html_resp = parse_paras_out_of_news_url(url)
-    # # print("Response from URL:", html_resp)
-    # soup = BeautifulSoup(html_resp, 'html.parser')
-    # # print(soup.prettify())
-
-    # article = ''
-    
-    # for i in soup.find_all('p'):
-    #     article += i.get_text()
-    
-    # print("Article:", article)
-
-
-
-    # # res = search_wikipedia(carney_question)
-    # # print("results from search_wiki:", res, len(res))
-    
-    # wiki_results = rag(context=search_wikipedia, question=candidate_question)
-    # print("result:", wiki_results)
-
-    # classify = dspy.Predict(Classify)
-    # news_res = classify(news_article=article)
-    # print("Classification  Of News Result:", news_res)
-
-    # wiki_results = classify(news_article=wiki_results.answer)
-    # print("Classification Of Wiki Result:", wiki_results)
     classify = dspy.Predict(Classify)
 
     def GetSentiment(url: str) -> str:
@@ -135,11 +86,6 @@ def main():
         description="Classify the sentiment of a news article as postive, negative or nuetral. Also provide the confidence score ranging from 0 to 1.",
     )
     demo.launch()
-    
-
-    
-       
-    
 
 if __name__ == "__main__":
     main()
