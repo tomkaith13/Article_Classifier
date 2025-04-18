@@ -89,7 +89,8 @@ def main():
         inputs=[gr.Textbox(label="Enter URL"), gr.Textbox(label="Subject")],
         outputs=gr.Textbox(label="Sentiment"),
         title="News Article Sentiment Classifier",
-        description="Classify the sentiment of a news article as postive, negative or nuetral. Also provide the confidence score ranging from 0 to 1.",
+        description="""Classify the sentiment of a news article as postive, negative or nuetral based on a given subject.
+        Also provide the confidence score ranging from 0 to 1. Also provides reasning on why the sentiment is classified as such.""",
     )
     demo.launch()
 
