@@ -2,7 +2,7 @@
 ## Pre-requisites
 - Uses [Ollama](https://ollama.com/) to run LLM locally and go easy on the wallet and the cost of time/latency.
 - Uses [DSPy](https://dspy.ai/) to use programming—rather than prompting large language models.
-- Uses Gradio to stitch together a UI to take url as input and return a 3 keyword tuple (Sentiment, Confidence and Reasoning)
+- Uses [Gradio](https://www.gradio.app/guides/quickstart) to stitch together a UI to take url as input and return a 3 keyword tuple (Sentiment, Confidence and Reasoning)
 - Uses [uv](https://docs.astral.sh/uv/) to manage pkg dependecies
 
 ## Running instructions
