@@ -16,6 +16,7 @@ rag = dspy.ChainOfThought('context, question -> answer')
 url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 # url = 'https://www.cbc.ca/news/politics/liberal-oppo-csfn-1.7509217'
 # url = "https://en.wikipedia.org/wiki/Python_(programming_language)"
+# url = 'https://www.cbc.ca/news/politics/english-leaders-debate-election-2025-1.7513834'
 
 headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'}
 
@@ -42,7 +43,14 @@ def parse_paras_out_of_news_url(url: str) -> str:
     try:
         r = requests.get(url, timeout=10, headers=headers)
         if r.status_code == 200:
-            return r.text
+            html_resp = r.text
+            soup = BeautifulSoup(html_resp, 'html.parser')
+            article : str = ''
+        
+            for i in soup.find_all('p'):
+                article += i.get_text()
+            return article
+
         else:
             return f"Error: {r.status_code}"
     except requests.exceptions.Timeout:
@@ -52,35 +60,33 @@ def parse_paras_out_of_news_url(url: str) -> str:
 
 
 class Classify(dspy.Signature):
-    """Classify sentiment of a given news article as being either nuetral, positive or negative."""
+    """Classify sentiment of a given news article for a given subject as being portrayed 
+    in the article as either positive or negative. If the subject is not mentioned, we classify it as unrelated"""
 
     news_article: str = dspy.InputField()
-    sentiment: Literal['nuetral', 'positive', 'negative'] = dspy.OutputField()
+    subject: str = dspy.InputField()
+    sentiment: Literal['unrelated', 'positive', 'negative'] = dspy.OutputField()
     confidence: float = dspy.OutputField()
+    reasoning: str = dspy.OutputField()
 
 
 
 def main():
     classify = dspy.Predict(Classify)
 
-    def GetSentiment(url: str) -> str:
+    def GetSentiment(url: str, subject : str) -> str:
         if urlparse(url)[0] != "https":
             return "Invalid URL"
-        html_resp = parse_paras_out_of_news_url(url)
-        soup = BeautifulSoup(html_resp, 'html.parser')
-        article : str = ''
-    
-        for i in soup.find_all('p'):
-            article += i.get_text()
-
+        article = parse_paras_out_of_news_url(url)
+        
         # print("Article:", article)
-        resp = classify(news_article=article)
+        resp = classify(news_article=article, subject=subject)
         print("Response:", resp)
-        return f'sentiment: {resp.sentiment}, confidence: {resp.confidence}'
+        return f'sentiment: {resp.sentiment}, \n\nconfidence: {resp.confidence},\n\nreasoning: {resp.reasoning}'
 
     demo = gr.Interface(
         fn=GetSentiment,
-        inputs=gr.Textbox(label="Enter URL"),
+        inputs=[gr.Textbox(label="Enter URL"), gr.Textbox(label="Subject")],
         outputs=gr.Textbox(label="Sentiment"),
         title="News Article Sentiment Classifier",
         description="Classify the sentiment of a news article as postive, negative or nuetral. Also provide the confidence score ranging from 0 to 1.",
