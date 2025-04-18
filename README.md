@@ -15,4 +15,9 @@
 ![Screenshot of Positive Example](./screenshots/positve-example.png)
 ![Screenshot of Negative Example](./screenshots/negative-example.png)
 
+## Next steps
+- Add development set with examples for the model evaluation
+- Add a metric for the classifier
+- Add optimizer for fine-tuning my classifier
+
 
