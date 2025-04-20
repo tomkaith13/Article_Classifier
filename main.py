@@ -1,17 +1,18 @@
 import dspy
+import dspy.evaluate
 import requests
 from bs4 import BeautifulSoup
 from typing import Literal
 import gradio as gr
 from functools import lru_cache
 from urllib.parse import urlparse
+from training.training_set import generate_dspy_training_examples, sentiment_match_metric
 
 
 lm = dspy.LM(
     'ollama_chat/llama3.2:latest',
-    api_base='http://localhost:11434',api_key='',cache=True, temperature=0.1)
+    api_base='http://localhost:11434',api_key='',cache=True, temperature=0.1, max_tokens=4096)
 dspy.configure(lm=lm)
-rag = dspy.ChainOfThought('context, question -> answer')
 
 url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 # url = 'https://www.cbc.ca/news/politics/liberal-oppo-csfn-1.7509217'
@@ -19,6 +20,12 @@ url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 # url = 'https://www.cbc.ca/news/politics/english-leaders-debate-election-2025-1.7513834'
 
 headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'}
+
+# evaluate_flag is used to run the training_set to get a metric of how we did thus far
+evaluate_flag = True
+
+# If True, shows prompts
+show_history = True
 
 @lru_cache(maxsize=1024)
 def parse_paras_out_of_news_url(url: str) -> str:
@@ -60,7 +67,7 @@ def parse_paras_out_of_news_url(url: str) -> str:
 
 
 class Classify(dspy.Signature):
-    """Classify sentiment of a given news article for a given subject as being portrayed 
+    """Classify sentiment of a given News Article for a given Subject as being portrayed 
     in the article as either positive or negative. If the subject is not mentioned, we classify it as unrelated"""
 
     news_article: str = dspy.InputField()
@@ -73,6 +80,12 @@ class Classify(dspy.Signature):
 
 def main():
     classify = dspy.Predict(Classify)
+    if evaluate_flag:
+        training_set = generate_dspy_training_examples()
+        # print('training_set:', training_set)
+        evaluator = dspy.Evaluate(devset=training_set, num_threads=5,display_progress=True, display_table=True)
+        evaluator(classify, metric=sentiment_match_metric)
+
 
     def GetSentiment(url: str, subject : str) -> str:
         if urlparse(url)[0] != "https":
@@ -82,6 +95,8 @@ def main():
         # print("Article:", article)
         resp = classify(news_article=article, subject=subject)
         print("Response:", resp)
+        if show_history:
+            dspy.inspect_history()
         return f'sentiment: {resp.sentiment}, \n\nconfidence: {resp.confidence},\n\nreasoning: {resp.reasoning}'
 
     demo = gr.Interface(
