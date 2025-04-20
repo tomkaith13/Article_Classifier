@@ -7,6 +7,8 @@ import gradio as gr
 from functools import lru_cache
 from urllib.parse import urlparse
 from training.training_set import generate_dspy_training_examples, sentiment_match_metric
+from dspy.teleprompt import BootstrapFewShot, MIPROv2, LabeledFewShot
+
 
 
 lm = dspy.LM(
@@ -22,10 +24,18 @@ url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'}
 
 # evaluate_flag is used to run the training_set to get a metric of how we did thus far
-evaluate_flag = True
+evaluate_flag = False
 
 # If True, shows prompts
 show_history = True
+
+# If true, optimizes the model using specified optimizer
+optimize = True
+
+# If True, serializes (state-only. See https://dspy.ai/tutorials/saving/#whole-program-saving for details) the optimized model for classification
+save_model = False
+
+
 
 @lru_cache(maxsize=1024)
 def parse_paras_out_of_news_url(url: str) -> str:
@@ -76,15 +86,38 @@ class Classify(dspy.Signature):
     confidence: float = dspy.OutputField()
     reasoning: str = dspy.OutputField()
 
+class SentimentClassifier(dspy.Module):
+    """Classify a news article sentiment based on a given subject and the news article itself."""
+    def __init__(self):
+        super().__init__()
+        self.classify = dspy.Predict(Classify)
+    
+    def forward(self, news_article: str, subject: str) -> Classify:
+        return self.classify(news_article=news_article, subject=subject)
+
+
 
 
 def main():
     classify = dspy.Predict(Classify)
+    training_set = generate_dspy_training_examples()
+
     if evaluate_flag:
-        training_set = generate_dspy_training_examples()
         # print('training_set:', training_set)
         evaluator = dspy.Evaluate(devset=training_set, num_threads=5,display_progress=True, display_table=True)
         evaluator(classify, metric=sentiment_match_metric)
+
+    if optimize:
+        # optimizer = BootstrapFewShot(metric=sentiment_match_metric)
+        optimizer = MIPROv2(metric=sentiment_match_metric, auto='light', num_threads=15)
+        classifier = SentimentClassifier()
+        optimized_classifier = optimizer.compile(classifier, trainset=training_set)
+    
+    if save_model:
+        optimized_classifier.save('./optimized_classifier.json')
+
+
+
 
 
     def GetSentiment(url: str, subject : str) -> str:
@@ -93,10 +126,16 @@ def main():
         article = parse_paras_out_of_news_url(url)
         
         # print("Article:", article)
-        resp = classify(news_article=article, subject=subject)
+        if optimize:
+            print("Running Optimized Classifier")
+            resp = optimized_classifier(news_article=article, subject=subject)
+        else:
+            print("Running Classifier")
+            resp = classify(news_article=article, subject=subject)
+
         print("Response:", resp)
         if show_history:
-            dspy.inspect_history()
+            dspy.inspect_history(n=1)
         return f'sentiment: {resp.sentiment}, \n\nconfidence: {resp.confidence},\n\nreasoning: {resp.reasoning}'
 
     demo = gr.Interface(
