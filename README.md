@@ -21,6 +21,61 @@ Example of a Negative Classification
 Metric Evaluation (Pre Optimization)
 ![evaluation](./screenshots/evaluation.png)
 
+## Getting prompts from the program
+This is the prompt that gets generated using the DSPy code.
+```bash
+[2025-04-20T12:37:57.264131]
+
+System message:
+
+Your input fields are:
+1. `news_article` (str)
+2. `subject` (str)
+Your output fields are:
+1. `sentiment` (Literal['unrelated', 'positive', 'negative'])
+2. `confidence` (float)
+3. `reasoning` (str)
+All interactions will be structured in the following way, with the appropriate values filled in.
+
+Inputs will have the following structure:
+
+[[ ## news_article ## ]]
+{news_article}
+
+[[ ## subject ## ]]
+{subject}
+
+Outputs will be a JSON object with the following fields.
+
+[[ ## sentiment ## ]]
+{sentiment}        # note: the value you produce must exactly match (no extra characters) one of: unrelated; positive; negative
+
+[[ ## confidence ## ]]
+{confidence}        # note: the value you produce must be a single float value
+
+[[ ## reasoning ## ]]
+{reasoning}
+In adhering to this structure, your objective is: 
+        Classify sentiment of a given News Article for a given Subject as being portrayed 
+        in the article as either positive or negative. If the subject is not mentioned, we classify it as unrelated
+
+
+User message:
+
+[[ ## news_article ## ]]
+New article that was scraped using BeautifulSoup.
+
+[[ ## subject ## ]]
+Mark Carney
+
+Respond with a JSON object in the following order of fields: `sentiment` (must be formatted as a valid Python Literal['unrelated', 'positive', 'negative']), then `confidence` (must be formatted as a valid Python float), then `reasoning`.
+
+
+Response:
+
+{"sentiment": "positive", "confidence": 0.8, "reasoning": "Mark Carney is a well-known economist and former Bank of England governor, known for his expertise in finance and economic policy. He has been praised for his leadership and decision-making skills during his time at the Bank of England. In this context, his presence as a leader in the debate suggests a positive sentiment towards him."}
+```
+
 ## Next steps
 - Add development set with examples for the model evaluation
 - Add a metric for the classifier
