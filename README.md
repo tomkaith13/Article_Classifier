@@ -12,8 +12,14 @@
 - Follow Instruction on terminal for the url for the Gradio app
 
 ### Screenshots
+Example of a Positive Classification
 ![Screenshot of Positive Example](./screenshots/positve-example.png)
+
+Example of a Negative Classification
 ![Screenshot of Negative Example](./screenshots/negative-example.png)
+
+Metric Evaluation (Pre Optimization)
+![evaluation](./screenshots/evaluation.png)
 
 ## Next steps
 - Add development set with examples for the model evaluation
