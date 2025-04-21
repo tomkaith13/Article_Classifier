@@ -24,7 +24,7 @@ url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'}
 
 # evaluate_flag is used to run the training_set to get a metric of how we did thus far
-evaluate_flag = False
+evaluate_flag = True
 
 # If True, shows prompts
 show_history = True
@@ -33,7 +33,7 @@ show_history = True
 optimize = True
 
 # If True, serializes (state-only. See https://dspy.ai/tutorials/saving/#whole-program-saving for details) the optimized model for classification
-save_model = False
+save_model = True
 
 
 
@@ -77,8 +77,7 @@ def parse_paras_out_of_news_url(url: str) -> str:
 
 
 class Classify(dspy.Signature):
-    """Classify sentiment of a given News Article for a given Subject as being portrayed 
-    in the article as either positive or negative. If the subject is not mentioned, we classify it as unrelated"""
+    """Determine if a given news article portrays the subject (who is a person), [Subject Name], in a positive or negative light. If [Subject Name] is not mentioned in the article, classify the sentiment as "unrelated".  """
 
     news_article: str = dspy.InputField()
     subject: str = dspy.InputField()
@@ -108,14 +107,18 @@ def main():
         evaluator(classify, metric=sentiment_match_metric)
 
     if optimize:
-        # optimizer = BootstrapFewShot(metric=sentiment_match_metric)
-        optimizer = MIPROv2(metric=sentiment_match_metric, auto='light', num_threads=15)
         classifier = SentimentClassifier()
-        optimized_classifier = optimizer.compile(classifier, trainset=training_set)
-    
-    if save_model:
-        optimized_classifier.save('./optimized_classifier.json')
+        optimizerBootStrap = BootstrapFewShot(metric=sentiment_match_metric)
+        optimized_classifier = optimizerBootStrap.compile(classifier, trainset=training_set)
 
+        # optimizer = MIPROv2(metric=sentiment_match_metric, auto='light', num_threads=15)
+        # optimized_classifier = optimizer.compile(classifier, teacher=optimized_classifier, trainset=training_set, max_labeled_demos=10)
+
+        evaluator = dspy.Evaluate(devset=training_set, num_threads=5,display_progress=True, display_table=True)
+        evaluator(optimized_classifier, metric=sentiment_match_metric)
+    
+        if save_model:
+            optimized_classifier.save('./optimized_classifier.json')
 
 
 
