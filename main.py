@@ -13,7 +13,7 @@ from dspy.teleprompt import BootstrapFewShot, MIPROv2, LabeledFewShot
 
 lm = dspy.LM(
     'ollama_chat/llama3.2:latest',
-    api_base='http://localhost:11434',api_key='',cache=False, temperature=0.1, max_tokens=4096)
+    api_base='http://localhost:11434',api_key='',cache=True, temperature=0.1, max_tokens=4096)
 dspy.configure(lm=lm)
 dspy.settings.configure(track_usage=True)
 
@@ -93,7 +93,7 @@ class SentimentClassifier(dspy.Module):
     """Classify a news article sentiment based on a given person and the news article itself."""
     def __init__(self):
         super().__init__()
-        self.classify = dspy.Predict(Classify)
+        self.classify = dspy.ChainOfThought(Classify)
     
     def forward(self, news_article: str, person_of_interest: str) -> Classify:
         return self.classify(news_article=news_article, person_of_interest=person_of_interest)
