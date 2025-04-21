@@ -13,8 +13,9 @@ from dspy.teleprompt import BootstrapFewShot, MIPROv2, LabeledFewShot
 
 lm = dspy.LM(
     'ollama_chat/llama3.2:latest',
-    api_base='http://localhost:11434',api_key='',cache=True, temperature=0.1, max_tokens=4096)
+    api_base='http://localhost:11434',api_key='',cache=False, temperature=0.1, max_tokens=4096)
 dspy.configure(lm=lm)
+dspy.settings.configure(track_usage=True)
 
 url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 # url = 'https://www.cbc.ca/news/politics/liberal-oppo-csfn-1.7509217'
@@ -24,7 +25,7 @@ url = "https://www.bbc.com/news/articles/c20l2evgny6o"
 headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15'}
 
 # evaluate_flag is used to run the training_set to get a metric of how we did thus far
-evaluate_flag = True
+evaluate_flag = False
 
 # If True, shows prompts
 show_history = True
@@ -77,22 +78,25 @@ def parse_paras_out_of_news_url(url: str) -> str:
 
 
 class Classify(dspy.Signature):
-    """Determine if a given news article portrays the subject (who is a person), [Subject Name], in a positive or negative light. If [Subject Name] is not mentioned in the article, classify the sentiment as "unrelated".  """
+    """
+    Determine if a given news article portrays the  given person of interest in a positive or negative light. 
+    If person is not mentioned in the article, classify the sentiment as "unrelated". 
+    """
 
     news_article: str = dspy.InputField()
-    subject: str = dspy.InputField()
+    person_of_interest: str = dspy.InputField()
     sentiment: Literal['unrelated', 'positive', 'negative'] = dspy.OutputField()
     confidence: float = dspy.OutputField()
     reasoning: str = dspy.OutputField()
 
 class SentimentClassifier(dspy.Module):
-    """Classify a news article sentiment based on a given subject and the news article itself."""
+    """Classify a news article sentiment based on a given person and the news article itself."""
     def __init__(self):
         super().__init__()
         self.classify = dspy.Predict(Classify)
     
-    def forward(self, news_article: str, subject: str) -> Classify:
-        return self.classify(news_article=news_article, subject=subject)
+    def forward(self, news_article: str, person_of_interest: str) -> Classify:
+        return self.classify(news_article=news_article, person_of_interest=person_of_interest)
 
 
 
@@ -107,12 +111,15 @@ def main():
         evaluator(classify, metric=sentiment_match_metric)
 
     if optimize:
-        classifier = SentimentClassifier()
+        optimized_classifier = SentimentClassifier()
         optimizerBootStrap = BootstrapFewShot(metric=sentiment_match_metric)
-        optimized_classifier = optimizerBootStrap.compile(classifier, trainset=training_set)
+        optimized_classifier = optimizerBootStrap.compile(optimized_classifier, trainset=training_set)
 
+        # Zero-shot instruction optimization
         # optimizer = MIPROv2(metric=sentiment_match_metric, auto='light', num_threads=15)
-        # optimized_classifier = optimizer.compile(classifier, teacher=optimized_classifier, trainset=training_set, max_labeled_demos=10)
+        # optimized_classifier = optimizer.compile(optimized_classifier, teacher=optimized_classifier,
+        #                                          trainset=training_set, max_labeled_demos=0, max_bootstrapped_demos=0,
+        #                                          requires_permission_to_run=False)
 
         evaluator = dspy.Evaluate(devset=training_set, num_threads=5,display_progress=True, display_table=True)
         evaluator(optimized_classifier, metric=sentiment_match_metric)
@@ -131,19 +138,20 @@ def main():
         # print("Article:", article)
         if optimize:
             print("Running Optimized Classifier")
-            resp = optimized_classifier(news_article=article, subject=subject)
+            resp = optimized_classifier(news_article=article, person_of_interest=subject)
         else:
             print("Running Classifier")
-            resp = classify(news_article=article, subject=subject)
+            resp = classify(news_article=article, person_of_interest=subject)
 
         print("Response:", resp)
         if show_history:
             dspy.inspect_history(n=1)
+        print("lm usage:", resp.get_lm_usage())
         return f'sentiment: {resp.sentiment}, \n\nconfidence: {resp.confidence},\n\nreasoning: {resp.reasoning}'
 
     demo = gr.Interface(
         fn=GetSentiment,
-        inputs=[gr.Textbox(label="Enter URL"), gr.Textbox(label="Subject")],
+        inputs=[gr.Textbox(label="Enter URL"), gr.Textbox(label="Person of Interest")],
         outputs=gr.Textbox(label="Sentiment"),
         title="News Article Sentiment Classifier",
         description="""Classify the sentiment of a news article as postive, negative or nuetral based on a given subject.
