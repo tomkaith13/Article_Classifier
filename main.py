@@ -93,7 +93,7 @@ class SentimentClassifier(dspy.Module):
     """Classify a news article sentiment based on a given person and the news article itself."""
     def __init__(self):
         super().__init__()
-        self.classify = dspy.ChainOfThought(Classify)
+        self.classify = dspy.ChainOfThoughtWithHint(Classify)
     
     def forward(self, news_article: str, person_of_interest: str) -> Classify:
         return self.classify(news_article=news_article, person_of_interest=person_of_interest)
@@ -112,7 +112,7 @@ def main():
 
     if optimize:
         optimized_classifier = SentimentClassifier()
-        optimizerBootStrap = BootstrapFewShotWithRandomSearch(metric=sentiment_match_metric)
+        optimizerBootStrap = BootstrapFewShot(metric=sentiment_match_metric)
         optimized_classifier = optimizerBootStrap.compile(optimized_classifier, trainset=training_set)
 
         # Zero-shot instruction optimization
