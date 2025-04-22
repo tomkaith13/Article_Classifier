@@ -1,0 +1,40 @@
+{
+  "classify.module.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Determine if a given news article portrays the  given person of interest in a positive or negative light. \nIf person is not mentioned in the article, classify the sentiment as \"unrelated\". ",
+      "fields": [
+        {
+          "prefix": "News Article:",
+          "description": "${news_article}"
+        },
+        {
+          "prefix": "Person Of Interest:",
+          "description": "${person_of_interest}"
+        },
+        {
+          "prefix": "Reasoning:",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Sentiment:",
+          "description": "${sentiment}"
+        },
+        {
+          "prefix": "Confidence:",
+          "description": "${confidence}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.10",
+      "dspy": "2.6.17",
+      "cloudpickle": "3.1"
+    }
+  }
+}

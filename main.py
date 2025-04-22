@@ -36,6 +36,9 @@ optimize = True
 # If True, serializes (state-only. See https://dspy.ai/tutorials/saving/#whole-program-saving for details) the optimized model for classification
 save_model = True
 
+# Generate a prompt using a teacher model
+generate_prompt = False
+
 
 
 @lru_cache(maxsize=1024)
@@ -113,19 +116,22 @@ def main():
     if optimize:
         optimized_classifier = SentimentClassifier()
         optimizerBootStrap = BootstrapFewShot(metric=sentiment_match_metric)
-        optimized_classifier = optimizerBootStrap.compile(optimized_classifier, trainset=training_set)
-
-        # Zero-shot instruction optimization
-        # optimizer = MIPROv2(metric=sentiment_match_metric, auto='light', num_threads=15)
-        # optimized_classifier = optimizer.compile(optimized_classifier, teacher=optimized_classifier,
-        #                                          trainset=training_set, max_labeled_demos=0, max_bootstrapped_demos=0,
-        #                                          requires_permission_to_run=False)
-
-        evaluator = dspy.Evaluate(devset=training_set, num_threads=5,display_progress=True, display_table=True)
-        evaluator(optimized_classifier, metric=sentiment_match_metric)
-    
+        teacher_classifier = optimizerBootStrap.compile(optimized_classifier, trainset=training_set)
         if save_model:
-            optimized_classifier.save('./optimized_classifier.json')
+            teacher_classifier.save('./optimized_classifier_bs_fewshot.json')
+
+        if generate_prompt:
+            # Zero-shot instruction optimization
+            optimizer = MIPROv2(metric=sentiment_match_metric, auto='light', num_threads=15)
+            optimized_classifier = optimizer.compile(SentimentClassifier(), teacher=teacher_classifier,
+                                                    trainset=training_set, max_labeled_demos=0, max_bootstrapped_demos=0,
+                                                    requires_permission_to_run=False)
+
+            evaluator = dspy.Evaluate(devset=training_set, num_threads=5,display_progress=True, display_table=True)
+            evaluator(optimized_classifier, metric=sentiment_match_metric)
+        
+            if save_model:
+                optimized_classifier.save('./optimized_classifier_zero_shot_miprov2.json')
 
 
 
@@ -138,7 +144,7 @@ def main():
         # print("Article:", article)
         if optimize:
             print("Running Optimized Classifier")
-            resp = optimized_classifier(news_article=article, person_of_interest=subject)
+            resp = teacher_classifier(news_article=article, person_of_interest=subject)
         else:
             print("Running Classifier")
             resp = classify(news_article=article, person_of_interest=subject)
