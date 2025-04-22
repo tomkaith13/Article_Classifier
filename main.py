@@ -7,13 +7,13 @@ import gradio as gr
 from functools import lru_cache
 from urllib.parse import urlparse
 from training.training_set import generate_dspy_training_examples, sentiment_match_metric
-from dspy.teleprompt import BootstrapFewShot, MIPROv2, LabeledFewShot
+from dspy.teleprompt import BootstrapFewShot, MIPROv2, LabeledFewShot, BootstrapFewShotWithRandomSearch
 
 
 
 lm = dspy.LM(
     'ollama_chat/llama3.2:latest',
-    api_base='http://localhost:11434',api_key='',cache=True, temperature=0.1, max_tokens=4096)
+    api_base='http://localhost:11434',api_key='',cache=False, temperature=0.1, max_tokens=4096)
 dspy.configure(lm=lm)
 dspy.settings.configure(track_usage=True)
 
@@ -28,7 +28,7 @@ headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Apple
 evaluate_flag = False
 
 # If True, shows prompts
-show_history = True
+show_history = False
 
 # If true, optimizes the model using specified optimizer
 optimize = True
@@ -112,7 +112,7 @@ def main():
 
     if optimize:
         optimized_classifier = SentimentClassifier()
-        optimizerBootStrap = BootstrapFewShot(metric=sentiment_match_metric)
+        optimizerBootStrap = BootstrapFewShotWithRandomSearch(metric=sentiment_match_metric)
         optimized_classifier = optimizerBootStrap.compile(optimized_classifier, trainset=training_set)
 
         # Zero-shot instruction optimization
