@@ -1,4 +1,8 @@
 # News Article Classifier using LLMs and DSPy
+## Summary
+This is a simple classifier that takes a news webpage, parses all the paragraphs and sends the content to an LLM along with a user designated
+person of interest. The idea is to classify how this Person of Interest is portrayed in the news article.
+
 ## Pre-requisites
 - Uses [Ollama](https://ollama.com/) to run LLM locally and go easy on the wallet and the cost of time/latency.
 - Uses [DSPy](https://dspy.ai/) to use programming—rather than prompting large language models.
@@ -77,8 +81,9 @@ Response:
 ```
 
 ## Next steps
-- Add development set with examples for the model evaluation
-- Add a metric for the classifier
-- Add optimizer for fine-tuning my classifier
+- ~~Add development set with examples for the model evaluation~~
+- ~~Add a metric for the classifier~~
+- ~~Add optimizer for fine-tuning my classifier~~
+- move the flags to the .env file 
 
 
